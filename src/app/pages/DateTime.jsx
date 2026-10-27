@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import Icon from '../../components/Icon'
-import { useStore } from '../../store/context'
 import { isoDate, timeLabel } from '../../utils/format'
 import { ANY_STYLIST, bookableDates, busyMap, daySlots, freeStylists } from '../availability'
 import { useApp } from '../context'
-import { useBooking } from '../hooks'
+import { useBooking, useCalendars } from '../hooks'
 import { Sheet, TopBar } from '../ui'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -13,9 +12,9 @@ const fmt = (iso, opts) => new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN
 
 export default function DateTime() {
   const navigate = useNavigate()
-  const { allBookings } = useStore()
   const { user, updateDraft } = useApp()
   const { salon, draft, services, duration, valid } = useBooking()
+  const calendars = useCalendars(salon?.id)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const today = isoDate()
   const dates = useMemo(() => bookableDates(today), [today])
@@ -27,7 +26,7 @@ export default function DateTime() {
     if (!salon) return new Map()
     return new Map(
       dates.map((date) => {
-        const busy = busyMap(salon, date, allBookings)
+        const busy = busyMap(salon, calendars?.[date])
         return [
           date,
           daySlots(salon, date).map((slot) => ({
@@ -37,7 +36,7 @@ export default function DateTime() {
         ]
       }),
     )
-  }, [salon, dates, allBookings, duration, any, draft.stylist])
+  }, [salon, dates, calendars, duration, any, draft.stylist])
 
   if (!valid) return <Navigate to={salon ? `/app/book/${salon.id}/services` : '/app'} replace />
 
@@ -46,7 +45,7 @@ export default function DateTime() {
   const date = dates.includes(draft.date) ? draft.date : (dates.slice(0, 3).find((d) => openCount(d) > 0) ?? dates[0])
   const chips = dates.slice(0, 3).includes(date) ? dates.slice(0, 3) : [dates[0], dates[1], date]
   const slots = slotsFor(date)
-  const picked = slots.find((s) => s.slot === draft.slot && s.free.length)
+  const picked = calendars ? slots.find((s) => s.slot === draft.slot && s.free.length) : null
 
   const pickDate = (d) => {
     updateDraft({ date: d, slot: null })
@@ -76,7 +75,7 @@ export default function DateTime() {
               <button key={d} type="button" className={`m-card m-date ${d === date ? 'is-selected' : ''}`} onClick={() => pickDate(d)} aria-pressed={d === date}>
                 <span className="m-date-day">{d === today ? 'Today' : fmt(d, { weekday: 'short' })}</span>
                 <strong>{fmt(d, { day: 'numeric', month: 'short' })}</strong>
-                <span className={`m-small ${count ? 'm-green' : 'm-muted'}`}>{count ? `${count} slots` : 'Full'}</span>
+                <span className={`m-small ${count && calendars ? 'm-green' : 'm-muted'}`}>{!calendars ? 'Checking…' : count ? `${count} slots` : 'Full'}</span>
               </button>
             )
           })}
@@ -87,7 +86,9 @@ export default function DateTime() {
         </div>
 
         <h2 className="m-h2">Select time</h2>
-        {slots.length === 0 ? (
+        {!calendars ? (
+          <p className="m-muted">Checking free times…</p>
+        ) : slots.length === 0 ? (
           <div className="m-empty">
             <strong>{date === today ? 'No more slots today' : 'Closed on this day'}</strong>
             <span className="m-muted">Pick another date above.</span>

@@ -2,9 +2,8 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ANY_STYLIST, DEFAULT_MINS, bookableDates, busyMap, daySlots, durationOf, freeStylists } from '../app/availability'
 import { useApp } from '../app/context'
-import { initials, isTopRated } from '../app/hooks'
+import { initials, isTopRated, useCalendars } from '../app/hooks'
 import { BOOKING_FEE } from '../data/salons'
-import { useStore } from '../store/context'
 import { dayLabel, isoDate, rupees, timeLabel } from '../utils/format'
 import Icon from './Icon'
 
@@ -21,7 +20,6 @@ const firstName = (name) => name.replace(/^Dr\.\s*/, '').split(' ')[0]
 // Selections live in the shared booking draft so they survive the sign-in detour.
 export default function BookingPanel({ salon, chosen, onRemoveService, onBook, confirmsManually, takingBookings }) {
   const navigate = useNavigate()
-  const { allBookings } = useStore()
   const { user, draft, updateDraft } = useApp()
   const mine = draft.salonId === salon.id
   const stylist = (mine && draft.stylist) || ANY_STYLIST
@@ -30,24 +28,25 @@ export default function BookingPanel({ salon, chosen, onRemoveService, onBook, c
   const servicesTotal = chosen.reduce((sum, s) => sum + s.price, 0)
   const today = isoDate()
   const dates = useMemo(() => bookableDates(today).slice(0, STRIP_DAYS), [today])
+  const calendars = useCalendars(salon.id, STRIP_DAYS)
 
   // date → [{ slot, free: stylists free for the whole appointment }]
   const days = useMemo(
     () =>
       new Map(
         dates.map((d) => {
-          const busy = busyMap(salon, d, allBookings)
+          const busy = busyMap(salon, calendars?.[d])
           return [d, daySlots(salon, d).map((slot) => ({ slot, free: freeStylists(salon, slot, duration, busy) }))]
         }),
       ),
-    [salon, dates, allBookings, duration],
+    [salon, dates, calendars, duration],
   )
 
   const eligible = (free) => (any ? free : free.filter((p) => p.name === stylist))
   const openCount = (d) => days.get(d).filter((s) => eligible(s.free).length).length
   const date = mine && dates.includes(draft.date) ? draft.date : (dates.find((d) => openCount(d) > 0) ?? dates[0])
   const slots = days.get(date)
-  const picked = mine && draft.date === date ? slots.find((s) => s.slot === draft.slot && eligible(s.free).length) : null
+  const picked = calendars && mine && draft.date === date ? slots.find((s) => s.slot === draft.slot && eligible(s.free).length) : null
   const assigned = picked ? eligible(picked.free)[0] : null
   const nextFree = (name) => slots.find((s) => s.free.some((p) => p.name === name))?.slot
   const nextOpenDate = dates.find((d) => d > date && openCount(d) > 0)

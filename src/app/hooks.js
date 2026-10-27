@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { get } from '../api'
 import { getSalon } from '../data/salons'
 import { useStore } from '../store/context'
-import { busyMap, durationOf } from './availability'
+import { BOOKING_DAYS, busyMap, durationOf } from './availability'
 import { useApp } from './context'
 
 export const initials = (name) =>
@@ -29,7 +30,35 @@ export function useBooking() {
   return { salon, draft, services, duration: durationOf(services), started, hasStylist, valid }
 }
 
-export function useBusy(salon, date) {
+const CALENDAR_POLL_MS = 15000
+
+// The salon's free-time calendars from the API (date → { stylists, full }), the same ones it checks bookings against.
+// Refetched every 15 s and whenever live data changes (someone booked or cancelled). Null until the first load.
+export function useCalendars(salonId, days = BOOKING_DAYS) {
   const { allBookings } = useStore()
-  return useMemo(() => (salon && date ? busyMap(salon, date, allBookings) : new Map()), [salon, date, allBookings])
+  const [loaded, setLoaded] = useState({ salonId: null, calendars: null })
+  // A new array arrives with every live poll; refetch only when a booking actually appeared, moved or closed
+  const bookingsVersion = useMemo(() => allBookings.map((b) => `${b.id}:${b.status}:${b.date}:${b.slot}`).join('|'), [allBookings])
+
+  useEffect(() => {
+    if (!salonId) return undefined
+    let current = true
+    const load = () =>
+      get(`/salons/${salonId}/availability?days=${days}`)
+        .then((calendars) => current && setLoaded({ salonId, calendars }))
+        .catch(() => {})
+    load()
+    const id = setInterval(() => document.visibilityState === 'visible' && load(), CALENDAR_POLL_MS)
+    return () => {
+      current = false
+      clearInterval(id)
+    }
+  }, [salonId, days, bookingsVersion])
+
+  return loaded.salonId === salonId ? loaded.calendars : null
+}
+
+export function useBusy(salon, date) {
+  const calendars = useCalendars(salon?.id)
+  return useMemo(() => (salon && date ? busyMap(salon, calendars?.[date]) : new Map()), [salon, date, calendars])
 }

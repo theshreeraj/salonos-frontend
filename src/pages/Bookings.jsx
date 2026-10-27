@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Icon from '../components/Icon'
-import { getSalon } from '../data/salons'
+import { CANCEL_REFUND_HOURS, getSalon } from '../data/salons'
 import { useStore } from '../store/context'
-import { STATUS_LABEL, bookingStatus, isActive } from '../store/queue'
+import { STATUS_LABEL, bookingStatus, isActive, refundsOnCancel } from '../store/queue'
 import { dayLabel, directionsUrl, hourLabel, rupees, timeLabel, tokenLabel } from '../utils/format'
 
 const TABS = [
   { id: 'upcoming', label: 'Upcoming', match: isActive },
   { id: 'completed', label: 'Completed', match: (s) => s === 'completed' },
-  { id: 'cancelled', label: 'Cancelled', match: (s) => s === 'cancelled' || s === 'declined' },
+  { id: 'cancelled', label: 'Cancelled', match: (s) => s === 'cancelled' || s === 'declined' || s === 'no-show' },
 ]
 
 export default function Bookings() {
@@ -23,7 +23,9 @@ export default function Bookings() {
 
   const cancel = (b) => {
     const what = b.token ? `token ${tokenLabel(b.token)}` : 'your request'
-    const refund = b.state === 'requested' ? ' Your booking fee will be refunded.' : ' Your place in the queue will be released.'
+    const refund = refundsOnCancel(b, getSalon(b.salonId))
+      ? ` Your ${rupees(b.fee)} booking fee will be refunded.`
+      : ` Your place will be released. The booking fee isn't refunded within ${CANCEL_REFUND_HOURS} hours of your time.`
     if (window.confirm(`Cancel ${what} at ${getSalon(b.salonId).name}?${refund}`)) {
       cancelBooking(b.id)
     }
@@ -73,7 +75,7 @@ export default function Bookings() {
                     </span>
                     {b.declineReason && <span className="muted">Salon: {b.declineReason}</span>}
                     {b.status === 'expired' && <span className="muted">The salon didn't respond in time</span>}
-                    {b.state !== 'cancelled' && b.state !== 'declined' && (
+                    {!['cancelled', 'declined', 'no-show'].includes(b.state) && (
                       <span className="muted">
                         {b.servicesTotal ? `${rupees(b.servicesTotal)} ${b.state === 'completed' ? 'paid at salon' : 'due at salon'}` : 'Pay at salon'}
                       </span>

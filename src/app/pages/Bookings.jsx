@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BOOKING_FEE, getSalon } from '../../data/salons'
+import { CANCEL_REFUND_HOURS, getSalon } from '../../data/salons'
 import { useStore } from '../../store/context'
-import { STATUS_LABEL, bookingStatus, isActive } from '../../store/queue'
+import { STATUS_LABEL, bookingStatus, isActive, refundsOnCancel } from '../../store/queue'
 import { dayLabel, directionsUrl, hourLabel, rupees, shortDate, timeLabel, tokenLabel } from '../../utils/format'
 import { TabScreen } from '../AppLayout'
 import { Sheet } from '../ui'
@@ -10,7 +10,7 @@ import { Sheet } from '../ui'
 const TABS = [
   { id: 'upcoming', label: 'Upcoming', test: isActive },
   { id: 'completed', label: 'Completed', test: (s) => s === 'completed' },
-  { id: 'cancelled', label: 'Cancelled', test: (s) => s === 'cancelled' || s === 'declined' },
+  { id: 'cancelled', label: 'Cancelled', test: (s) => s === 'cancelled' || s === 'declined' || s === 'no-show' },
 ]
 
 export default function Bookings() {
@@ -117,9 +117,11 @@ export default function Bookings() {
         <Sheet center label="Cancel booking" onClose={() => setCancelling(null)}>
           <h2 className="m-dialog-title">Cancel this booking?</h2>
           <p className="m-muted">
-            {cancelling.status === 'requested'
+            {cancelling.status === 'requested' || cancelling.status === 'proposed'
               ? `The salon hasn't confirmed yet, so your ${rupees(cancelling.fee)} booking fee will be refunded.`
-              : `Your slot will be released. The ${rupees(BOOKING_FEE)} booking fee isn't refunded once the salon has confirmed.`}
+              : refundsOnCancel(cancelling, getSalon(cancelling.salonId))
+                ? `You're cancelling more than ${CANCEL_REFUND_HOURS} hours ahead, so your ${rupees(cancelling.fee)} booking fee will be refunded.`
+                : `Your slot will be released. The ${rupees(cancelling.fee)} booking fee isn't refunded within ${CANCEL_REFUND_HOURS} hours of your time.`}
           </p>
           <button
             type="button"
