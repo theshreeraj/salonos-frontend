@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom'
 import { get } from '../api'
 import { getSalon } from '../data/salons'
 import { useStore } from '../store/context'
-import { BOOKING_DAYS, busyMap, durationOf } from './availability'
+import { BOOKING } from '../data/config'
+import { busyMap, durationOf } from './availability'
 import { useApp } from './context'
 
 export const initials = (name) =>
@@ -34,7 +35,7 @@ const CALENDAR_POLL_MS = 15000
 
 // The salon's free-time calendars from the API (date → { stylists, full }), the same ones it checks bookings against.
 // Refetched every 15 s and whenever live data changes (someone booked or cancelled). Null until the first load.
-export function useCalendars(salonId, days = BOOKING_DAYS) {
+export function useCalendars(salonId, days = BOOKING.bookingDays) {
   const { allBookings } = useStore()
   const [loaded, setLoaded] = useState({ salonId: null, calendars: null })
   // A new array arrives with every live poll; refetch only when a booking actually appeared, moved or closed

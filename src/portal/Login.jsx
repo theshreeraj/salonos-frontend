@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { PHOTOS } from '../data/salons'
 import { usePortal } from './context'
-import { DEMO_ACCOUNTS, DEMO_PASSWORD, ROLES, ROLE_ORDER } from './data'
+import { DEMO, ROLES, ROLE_ORDER } from './data'
 import { homeFor } from './hooks'
 import './portal.css'
 
@@ -31,7 +31,7 @@ export default function Login() {
 
   const fillDemo = (email) => {
     setIdentifier(email)
-    setPassword(DEMO_PASSWORD)
+    setPassword(DEMO.password)
     setError('')
   }
 
@@ -112,22 +112,24 @@ export default function Login() {
             {busy ? 'Signing in…' : `Sign in as ${ROLES[role].label}`}
           </button>
 
-          <div className="demo-hint">
-            <span className="demo-hint-title">
-              <Icon name="info" size={16} /> Demo {ROLES[role].label.toLowerCase()} · password <code>{DEMO_PASSWORD}</code>
-            </span>
-            {DEMO_ACCOUNTS[role].map((d) => (
-              <div key={d.email} className="demo-row">
-                <span>
-                  <code>{d.email}</code>
-                  <span className="muted small d-block">{d.note}</span>
-                </span>
-                <button type="button" className="btn btn-outline btn-xs" onClick={() => fillDemo(d.email)}>
-                  Fill in
-                </button>
-              </div>
-            ))}
-          </div>
+          {DEMO && (
+            <div className="demo-hint">
+              <span className="demo-hint-title">
+                <Icon name="info" size={16} /> Demo {ROLES[role].label.toLowerCase()} · password <code>{DEMO.password}</code>
+              </span>
+              {(DEMO.accounts[role] ?? []).map((d) => (
+                <div key={d.email} className="demo-row">
+                  <span>
+                    <code>{d.email}</code>
+                    <span className="muted small d-block">{d.note}</span>
+                  </span>
+                  <button type="button" className="btn btn-outline btn-xs" onClick={() => fillDemo(d.email)}>
+                    Fill in
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </form>
       </div>
 

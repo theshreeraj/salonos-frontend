@@ -1,10 +1,16 @@
-// Portal constants and the queue view model. Users, salons and applications come from the API.
+// Portal navigation, labels and the queue view model. Users, salons, applications, districts and demo sign-ins
+// come from the API.
+import { DISTRICTS } from '../data/config'
 import { isoDate } from '../utils/format'
-import { hash } from '../../../shared/queue.js'
 
-export { hash }
+export { DEMO, DISTRICTS } from '../data/config'
 
-export const DEMO_PASSWORD = 'demo1234'
+// FNV-1a: stable pseudo-random numbers from a string, so simulated rows are the same on every render
+export function hash(str) {
+  let h = 2166136261
+  for (const ch of str) h = Math.imul(h ^ ch.charCodeAt(0), 16777619)
+  return h >>> 0
+}
 
 export const ROLES = {
   frontdesk: {
@@ -85,24 +91,7 @@ export const SOLO_NAV = [
   { to: '/portal/my-day', label: 'My day', icon: 'scissors' },
 ]
 
-// Demo accounts listed on the login page, per role
-export const DEMO_ACCOUNTS = {
-  frontdesk: [{ email: 'frontdesk@salonos.app', note: 'Mirror & Mane · has a receptionist' }],
-  stylist: [
-    { email: 'barber@salonos.app', note: "Mehboob Men's Parlour · no receptionist" },
-    { email: 'stylist@salonos.app', note: 'Mirror & Mane · front desk handles bookings' },
-  ],
-  agent: [{ email: 'agent@salonos.app', note: 'Pune West' }],
-  manager: [{ email: 'manager@salonos.app', note: 'Pune West' }],
-  admin: [{ email: 'admin@salonos.app', note: 'All districts' }],
-}
-
 export const ROLE_ORDER = ['frontdesk', 'stylist', 'agent', 'manager', 'admin']
-
-export const DISTRICTS = [
-  { id: 'pune-west', name: 'Pune West', city: 'Pune' },
-  { id: 'pune-east', name: 'Pune East', city: 'Pune' },
-]
 
 export const districtName = (id) => DISTRICTS.find((d) => d.id === id)?.name ?? '—'
 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Icon from '../../components/Icon'
 import { SALONS, getSalon } from '../../data/salons'
 import { usePortal } from '../context'
-import { DEMO_PASSWORD, DISTRICTS, ROLES, ROLE_ORDER, districtName } from '../data'
+import { DEMO, DISTRICTS, ROLES, ROLE_ORDER, districtName } from '../data'
 import { PageHeader, Pill, Sheet } from '../ui'
 
 const SALON_ROLES = ['frontdesk', 'stylist']
@@ -97,7 +97,7 @@ export default function Users() {
 
 function AddUserSheet({ onClose }) {
   const { users, addUser } = usePortal()
-  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'frontdesk', salonId: SALONS[0].id, district: DISTRICTS[0].id, password: DEMO_PASSWORD })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'frontdesk', salonId: SALONS[0].id, district: DISTRICTS[0].id, password: DEMO?.password ?? '' })
   const [error, setError] = useState('')
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
 

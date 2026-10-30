@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ANY_STYLIST, DEFAULT_MINS, bookableDates, busyMap, daySlots, durationOf, freeStylists } from '../app/availability'
+import { ANY_STYLIST, bookableDates, busyMap, daySlots, durationOf, freeStylists } from '../app/availability'
+import { BOOKING } from '../data/config'
 import { useApp } from '../app/context'
 import { initials, isTopRated, useCalendars } from '../app/hooks'
 import { BOOKING_FEE } from '../data/salons'
@@ -24,7 +25,7 @@ export default function BookingPanel({ salon, chosen, onRemoveService, onBook, c
   const mine = draft.salonId === salon.id
   const stylist = (mine && draft.stylist) || ANY_STYLIST
   const any = stylist === ANY_STYLIST
-  const duration = Math.max(durationOf(chosen), DEFAULT_MINS)
+  const duration = Math.max(durationOf(chosen), BOOKING.defaultMins)
   const servicesTotal = chosen.reduce((sum, s) => sum + s.price, 0)
   const today = isoDate()
   const dates = useMemo(() => bookableDates(today).slice(0, STRIP_DAYS), [today])
